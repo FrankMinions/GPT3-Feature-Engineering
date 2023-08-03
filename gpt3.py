@@ -88,7 +88,7 @@ if __name__ == '__main__':
                                                                    "features")
     parser.add_argument("--n_components", type=int, default=256,
                         help="Number of components to keep. Only is_pca is ture, it needs to be set.")
-    parser.add_argument("--alpha", default=2, type=float, help="Shape of the distribution. Must be positive.")
+    parser.add_argument("--alpha", default=9, type=float, help="Shape of the distribution. Must be positive.")
     parser.add_argument("--save_path", type=str, help="The path for saving filtered text.")
 
     args = parser.parse_args()
