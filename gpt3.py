@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 
 warnings.filterwarnings('ignore')
 
-conf = SparkConf().setAppName("feature engineering").setMaster("local")
+conf = SparkConf().setAppName("feature engineering").setMaster("local[*]")
 sc = SparkContext(conf=conf)
 
 spark = SparkSession.builder.getOrCreate()
@@ -82,11 +82,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--c_path", type=str, help="The path of the clean text.")
     parser.add_argument("--d_path", type=str, help="The path of the dirty text.")
-    parser.add_argument("--numFeatures", type=int, help="Using hash function to map the maximum number of features "
+    parser.add_argument("--numFeatures", type=int, default=None, help="Using hash function to map the maximum number of features "
                                                         "required for index mapping.")
     parser.add_argument("--is_pca", type=bool, default=False, help="Is pca used to reduce the dimensionality of "
                                                                    "features")
-    parser.add_argument("--n_components", type=int, default=256,
+    parser.add_argument("--n_components", type=int, default=512,
                         help="Number of components to keep. Only is_pca is ture, it needs to be set.")
     parser.add_argument("--alpha", default=9, type=float, help="Shape of the distribution. Must be positive.")
     parser.add_argument("--save_path", type=str, help="The path for saving filtered text.")
