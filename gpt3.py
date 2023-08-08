@@ -11,6 +11,9 @@ from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
 
 conf = SparkConf().setAppName("feature engineering").setMaster("local[*]")
+conf.set("spark.driver.memory", '4G') 
+conf.set("spark.executor.memory", '6G') 
+
 sc = SparkContext(conf=conf)
 
 spark = SparkSession.builder.getOrCreate()
