@@ -2,11 +2,11 @@ import csv
 import argparse
 import warnings
 import numpy as np
-import pandas as pd
 from typing import List
 from pyspark import SparkContext, SparkConf
 from pyspark.ml.feature import Tokenizer, HashingTF
 from pyspark.sql import SparkSession
+from pyspark.pandas import read_excel, read_csv, DataFrame
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 
@@ -26,16 +26,18 @@ sc = SparkContext(conf=conf)
 spark = SparkSession.builder.getOrCreate()
 tokenizer = Tokenizer(inputCol="sequence", outputCol="tokens")
 
+EXCEL_FORMAT = ["xlsx", 'xls']
+
 
 def readFile(file_path: str, file_format: str, is_head: bool):
     df = None
-    if file_format == 'xlsx':
-        df = pd.read_excel(file_path, header=None).values.tolist()
+    if file_format in EXCEL_FORMAT:
+        df = read_excel(file_path, header=None).values.tolist()
     if file_format == 'csv':
-        df = pd.read_csv(file_path, header=None).values.tolist()
+        df = read_csv(file_path, header=None).values.tolist()
     if file_format == 'txt':
         df = sc.textFile(file_path)
-        
+
     if is_head:
         return df[1:], df[0]
     else:
@@ -88,7 +90,6 @@ def getFilteredIndex(proba, alpha):
         # The probability of negative classes satisfying the Pareto distribution.
         if 1 - proba[i, 1] < np.random.pareto(alpha):
             index.append(i)
-
     return index
 
 
@@ -116,15 +117,12 @@ def writeExcel(lines: List, index: List, is_head: bool, header: List, save_path:
     for i, line in enumerate(lines):
         if i in index:
             data.append(line[0].split('<sep>'))
-
     if is_head:
-        df = pd.DataFrame(data, columns=header)
+        df = DataFrame(data, columns=header)
+        df.to_excel(save_path, sheet_name='sheet1', index=False)
     else:
-        df = pd.DataFrame(data, columns=None)
-
-    writer = pd.ExcelWriter(save_path, engine='openpyxl')
-    df.to_excel(writer, sheet_name='sheet1', index=False)
-    writer.save()
+        df = DataFrame(data)
+        df.to_excel(save_path, sheet_name='sheet1', header=False, index=False)
 
 
 if __name__ == '__main__':
@@ -133,7 +131,7 @@ if __name__ == '__main__':
     parser.add_argument("--c_path", type=str, default="wikipedia.txt", help="The path of the clean text.")
     parser.add_argument("--d_path", type=str, help="The path of the dirty text.")
     parser.add_argument("--is_head", type=bool, default=False, help="Does the table contain a header.")
-    parser.add_argument("--numFeatures", type=int, help="Using hash function to map the maximum number of features "
+    parser.add_argument("--numFeatures", type=int, default=None, help="Using hash function to map the maximum number of features "
                                                         "required for index mapping.")
     parser.add_argument("--is_pca", type=bool, default=False, help="Is pca used to reduce the dimensionality of "
                                                                    "features")
@@ -147,6 +145,8 @@ if __name__ == '__main__':
 
     if args.d_path.endswith('xlsx'):
         file_format = 'xlsx'
+    elif args.d_path.endswith('xls'):
+        file_format = 'xls'
     elif args.d_path.endswith('csv'):
         file_format = 'csv'
     elif args.d_path.endswith('txt'):
@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
     proba = runLogisticClassifier(features, labels, d_array, args.c, args.max_iter)
     index = getFilteredIndex(proba, alpha=args.alpha)
-    if file_format != 'xlsx':
+    if file_format not in EXCEL_FORMAT:
         writeFile(lines, index, file_format, args.is_head, header, args.save_path)
     else:
         writeExcel(lines, index, args.is_head, header, args.save_path)
