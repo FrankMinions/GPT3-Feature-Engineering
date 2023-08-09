@@ -12,7 +12,13 @@ from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
 
 conf = SparkConf().setAppName("feature engineering").setMaster("local[*]")
+
+# Driver heap memory size. Driver is the main control process responsible for creating context, 
+# submitting jobs, converting jobs into tasks, and coordinating task execution between executors.
 conf.set("spark.driver.memory", '4G') 
+
+# Executor heap memory. The executor is mainly responsible for executing specific calculation tasks 
+# and returning the results to the driver.
 conf.set("spark.executor.memory", '6G') 
 
 sc = SparkContext(conf=conf)
