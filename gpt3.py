@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import argparse
 import warnings
@@ -105,17 +106,16 @@ if __name__ == '__main__':
     features = np.vstack((c_array, d_array))
     labels = getLabels(c_array, d_array)
 
-    print(f"---LogisticRegression classifier input shape: {features.shape}---")
-    print(f"---LogisticRegression classifier label shape: {labels.shape}---")
+    print(f"The input and output shapes of a logistic regression classifier are {features.shape} and {labels.shape}.")
 
     if args.is_pca:
         pca = PCA(n_components=args.n_components)
         features = pca.fit_transform(features)
-        print(f"---cumulative proportion of variance of the n components: {sum(pca.explained_variance_ratio_)}---")
-
         d_array = pca.transform(d_array)
-        print(f"---cumulative proportion of variance of the n components: {sum(pca.explained_variance_ratio_)}---")
 
+        explained_variance_ratio = sum(pca.explained_variance_ratio_)
+        print(f"The cumulative proportions of the top n principal components of high-quality data is {explained_variance_ratio}.")
+        
     proba = runLogisticClassifier(features, labels, d_array)
     index = getFilteredIndex(proba, alpha=args.alpha)
     writeFile(lines, index, args.save_path)
