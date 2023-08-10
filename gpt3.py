@@ -1,10 +1,11 @@
 import csv
+import jieba
 import argparse
 import warnings
 import numpy as np
 from typing import List
 from pyspark import SparkContext, SparkConf
-from pyspark.ml.feature import Tokenizer, HashingTF
+from pyspark.ml.feature import HashingTF
 from pyspark.sql import SparkSession
 from pyspark.pandas import read_excel, read_csv, DataFrame
 from sklearn.linear_model import LogisticRegression
@@ -24,7 +25,6 @@ conf.set("spark.executor.memory", '6G')
 
 sc = SparkContext(conf=conf)
 spark = SparkSession.builder.getOrCreate()
-tokenizer = Tokenizer(inputCol="sequence", outputCol="tokens")
 
 EXCEL_FORMAT = ["xlsx", 'xls']
 
@@ -45,27 +45,39 @@ def readFile(file_path: str, file_format: str, is_head: bool):
 
 
 def getTokens(df, file_format: str):
-    lines = []
+
+    def no_empty(s):
+        if s != " ":
+            return s
+
+    lines, tokens = [], []
     if file_format == 'txt':
-        for line in df.collect():
+        for i, line in enumerate(df.collect()):
             lines.append(tuple([line]))
+            token = jieba.lcut(line)
+            token_ = list(filter(no_empty, token))
+            tokens.append(tuple([line, token_]))
     else:
-        for line in df:
-            # Multiple sentences marked with token <sep>.
-            lines.append(tuple(["<sep>".join(line)]))
+        for i, line in enumerate(df):
+            # multiple sentences marked with token <sep>
+            line_ = "<sep>".join(line)
+            lines.append(tuple([line_]))
+            token = jieba.lcut(line_)
+            token_ = list(filter(no_empty, token))
+            tokens.append(tuple([line_, token_]))
 
-    tokens = tokenizer.transform(spark.createDataFrame(lines, ["sequence"]))
-    return lines, tokens
+    tokenDf = spark.createDataFrame(tokens, ["sequence", "tokens"])
+    return lines, tokenDf
 
 
-def runHashingTF(numFeatures, tokens):
+def runHashingTF(numFeatures, tokenDf):
     hashingTF = HashingTF(inputCol="tokens", outputCol="features")
     if numFeatures:
         # default to 262144 if you do not specify
         hashingTF.setNumFeatures(numFeatures)
 
     features = []
-    rows = hashingTF.transform(tokens).collect()
+    rows = hashingTF.transform(tokenDf).collect()
     for row in rows:
         features.append(list(row.features.toArray()))
 
@@ -157,11 +169,11 @@ if __name__ == '__main__':
     cdf, _ = readFile(args.c_path, 'txt', False)
     ddf, header = readFile(args.d_path, file_format, args.is_head)
 
-    _, c_tokens = getTokens(cdf, 'txt')
-    lines, d_tokens = getTokens(ddf, file_format)
+    _, c_tokenDf = getTokens(cdf, 'txt')
+    lines, d_tokenDf = getTokens(ddf, file_format)
 
-    c_array = runHashingTF(args.numFeatures, c_tokens)
-    d_array = runHashingTF(args.numFeatures, d_tokens)
+    c_array = runHashingTF(args.numFeatures, c_tokenDf)
+    d_array = runHashingTF(args.numFeatures, d_tokenDf)
 
     features = np.vstack((c_array, d_array))
     labels = getLabels(c_array, d_array)
