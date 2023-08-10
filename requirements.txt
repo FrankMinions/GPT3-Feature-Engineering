@@ -1,2 +1,3 @@
+jieba
 pyspark
 scikit-learn
