@@ -1,4 +1,3 @@
-jieba
 pyspark
 scikit-learn
 transformers
