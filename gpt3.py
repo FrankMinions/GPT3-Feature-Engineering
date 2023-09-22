@@ -1,5 +1,4 @@
 import csv
-import jieba
 import argparse
 import warnings
 import numpy as np
@@ -10,6 +9,7 @@ from pyspark.sql import SparkSession
 from pyspark.pandas import read_excel, read_csv, DataFrame
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
+from transformers import AutoTokenizer
 
 warnings.filterwarnings('ignore')
 
@@ -46,6 +46,9 @@ def readFile(file_path: str, file_format: str, is_head: bool):
 
 def getTokens(df, file_format: str):
 
+    # If the download times out, it is strongly recommended to download the tokenizer model in advance and import it from local.
+    tokenizer = AutoTokenizer.from_pretrained("baichuan-inc/Baichuan2-13B-Base", use_fast=False, trust_remote_code=True)
+
     def no_empty(s):
         if s != " ":
             return s
@@ -54,15 +57,15 @@ def getTokens(df, file_format: str):
     if file_format == 'txt':
         for i, line in enumerate(df.collect()):
             lines.append(tuple([line]))
-            token = jieba.lcut(line)
+            token = tokenizer.tokenize(line)
             token_ = list(filter(no_empty, token))
             tokens.append(tuple([line, token_]))
     else:
         for i, line in enumerate(df):
-            # multiple sentences marked with token <sep>
-            line_ = "<sep>".join(line)
+            # multiple sentences marked with token <unk>
+            line_ = "<unk>".join(line)
             lines.append(tuple([line_]))
-            token = jieba.lcut(line_)
+            token = tokenizer.tokenize(line_)
             token_ = list(filter(no_empty, token))
             tokens.append(tuple([line_, token_]))
 
@@ -121,14 +124,14 @@ def writeFile(lines: List, index: List, file_format: str, is_head: bool, header:
                 csv_writer.writerow(header)
             for i, line in enumerate(lines):
                 if i in index:
-                    csv_writer.writerow(line[0].split('<sep>'))
+                    csv_writer.writerow(line[0].split('<unk>'))
 
 
 def writeExcel(lines: List, index: List, is_head: bool, header: List, save_path: str):
     data = []
     for i, line in enumerate(lines):
         if i in index:
-            data.append(line[0].split('<sep>'))
+            data.append(line[0].split('<unk>'))
     if is_head:
         df = DataFrame(data, columns=header)
         df.to_excel(save_path, sheet_name='sheet1', index=False)
