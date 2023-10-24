@@ -5,3 +5,5 @@ The code implementation of feature engineering in GPT3 paper which comes from [h
 In view of the need to support Chinese and English languages under normal circumstances, for this consideration, I chose the tokenizer of Baichuan2-13B-Base as the segmentation tool.
 
 Note that sentences are separated by `<unk>`.
+
+If you want to deploy the project on a Linux machine, you can refer to the `Dockerfile` provided by us. It is worth noting that you need to download the `jdk` compressed package first.

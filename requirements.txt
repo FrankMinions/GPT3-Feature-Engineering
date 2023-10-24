@@ -1,3 +1,7 @@
+numpy
 pyspark
 scikit-learn
 transformers
+pandas
+pyarrow
+uvicorn
