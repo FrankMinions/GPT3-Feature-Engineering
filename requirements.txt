@@ -1,7 +1,7 @@
 numpy
 pyspark
 scikit-learn
-transformers
+transformers==4.33.2
 pandas
 pyarrow
 uvicorn
