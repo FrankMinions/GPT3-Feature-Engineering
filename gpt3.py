@@ -32,9 +32,9 @@ EXCEL_FORMAT = ["xlsx", 'xls']
 def readFile(file_path: str, file_format: str, is_head: bool):
     df = None
     if file_format in EXCEL_FORMAT:
-        df = read_excel(file_path, header=None).values.tolist()
+        df = read_excel(file_path, header=None).fillna('').values.tolist()
     if file_format == 'csv':
-        df = read_csv(file_path, header=None).values.tolist()
+        df = read_csv(file_path, header=None).fillna('').values.tolist()
     if file_format == 'txt':
         df = sc.textFile(file_path)
 
